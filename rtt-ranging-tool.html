@@ -1,0 +1,818 @@
+<!--
+ Copyright 2026 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     https://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RTT Ranging Tool</title>
+  <script>
+    const APP_VERSION = "261008-0";
+    (function(){
+      var cb = "?cb=" + new Date().getTime();
+      document.write('<link rel="stylesheet" href="rtt-ranging-tool.css' + cb + '">');
+    })();
+  </script>
+</head>
+<body>
+  <div class="container">
+    <div id="left-panel" class="panel left-panel">
+      <div id="title-version" class="title"></div>
+      <div class="tabs-container">
+        <button id="tab-range-analysis" class="tab-button active">Range Analysis</button>
+        <button id="tab-ap-location" class="tab-button">AP Location</button>
+      </div>
+      <div id="tab-content-range-analysis" class="tab-content active">
+        <div class="subpanel">
+          <div class="subpanel-title">
+            <span>File</span>
+            <div class="subpanel-header-controls">
+              <label class="checkbox-label" style="font-size: 0.8em; display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                <input type="checkbox" id="range-file-drag"> drag
+              </label>
+              <button class="defaults-btn" id="btn-range-file-reset" style="background-color: #7b1fa2; color: #ffffff; border-color: #6a1b9a;" title="Clear loaded data">reset</button>
+              <button class="defaults-btn" id="btn-range-all-defaults" title="Reset all subpanels in Range Analysis to defaults">All defaults</button>
+              <label class="checkbox-label"><input type="checkbox" class="subpanel-show-checkbox" id="range-file-show" checked> show</label>
+            </div>
+          </div>
+          <div class="subpanel-body">
+            <div class="file-input-container" id="range-file-input-container">
+              <input type="text" id="range-file-text" readonly placeholder="Range Log CSV">
+              <button id="range-browse-button" class="browse-button">Load</button>
+              <input type="file" id="range-file-input" style="display: none;">
+            </div>
+            <div id="range-file-dropzone" style="display: none; border: 2px dashed #1a73e8; border-radius: 6px; padding: 18px 10px; text-align: center; background: #f8fafd; cursor: pointer; transition: background 0.2s, border-color 0.2s;">
+              <div style="font-size: 1.5em; margin-bottom: 4px; color: #1a73e8;">📥</div>
+              <div id="range-file-dropzone-text" style="font-size: 0.85em; font-weight: 500; color: #1a73e8;">Drag &amp; Drop Range Log CSV Here</div>
+              <div style="font-size: 0.75em; color: #5f6368; margin-top: 3px;">or click to browse</div>
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+              <button id="range-reload-button" class="browse-button" style="flex: 1;">Reload Previous Files</button>
+              <button id="range-toggle-show-button" class="browse-button" style="flex: 1; background-color: #1a73e8;">Toggle Show[]</button>
+            </div>
+          </div>
+        </div>
+        <div class="subpanel subpanel-yellow collapsed">
+          <div class="subpanel-title">
+            <span>Data</span>
+            <div class="subpanel-header-controls">
+              <button class="defaults-btn" id="btn-range-data-defaults">defaults</button>
+              <label class="checkbox-label"><input type="checkbox" class="subpanel-show-checkbox" id="range-data-show"> show</label>
+            </div>
+          </div>
+          <div class="subpanel-body" style="display: none;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.8em; font-weight: 500;">Raw Data</span>
+                <label class="checkbox-label" style="font-size: 0.8em; display: flex; align-items: center; gap: 3px;">
+                  <input type="checkbox" id="range-show-raw-data"> show
+                </label>
+              </div>
+              <textarea id="range-raw-data-textbox" rows="10" readonly style="width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.8em; border: 1px solid #ccc; padding: 4px; resize: vertical; white-space: pre; overflow-x: auto; display: none;"></textarea>
+            </div>
+            <div style="margin-top: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.8em; font-weight: 500;">Parsed Data</span>
+                <label class="checkbox-label" style="font-size: 0.8em; display: flex; align-items: center; gap: 3px;">
+                  <input type="checkbox" id="range-show-parsed-data"> show
+                </label>
+              </div>
+              <textarea id="range-parsed-data-textbox" rows="10" readonly style="width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.8em; border: 1px solid #ccc; padding: 4px; resize: vertical; white-space: pre; overflow-x: auto; display: none;"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="subpanel subpanel-green">
+          <div class="subpanel-title">
+            <span>Parameters &amp; Filters</span>
+            <div class="subpanel-header-controls">
+              <button class="defaults-btn" id="btn-range-params-defaults">defaults</button>
+              <label class="checkbox-label"><input type="checkbox" class="subpanel-show-checkbox" checked> show</label>
+            </div>
+          </div>
+          <div class="subpanel-body">
+            <!-- Section 1: Estimated vs Actual Distance -->
+            <div class="param-section">
+              <div class="param-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; margin-bottom: 6px;">
+                <span style="font-size: 0.85em; font-weight: bold; color: #1e4620;">Estimated vs Actual Distance</span>
+                <label class="checkbox-label" style="font-size: 0.8em; display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="checkbox" class="param-section-show" id="show-params-est-dist" checked> show
+                </label>
+              </div>
+              <div class="param-section-body">
+                <div class="file-input-container" style="margin-top: 4px; justify-content: space-between;">
+                  <span style="font-size: 0.8em; margin-right: 10px;">Device/OS</span>
+                  <input type="text" id="range-device-input" value="Pixel/OS" style="width: 100px; padding: 4px; border: 1px solid #ccc; font-size: 0.8em;">
+                </div>
+                <div class="file-input-container" style="margin-top: 6px; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.8em; margin-right: 10px;">Bandwidth</span>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <input type="text" id="range-bandwidth-input" value="80MHz" style="width: 65px; padding: 4px; border: 1px solid #ccc; font-size: 0.8em;">
+                    <label class="checkbox-label" style="font-size: 0.8em; display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                      <input type="checkbox" id="range-bandwidth-auto" checked> auto
+                    </label>
+                  </div>
+                </div>
+                <div style="margin-top: 8px; display: flex; justify-content: space-between; gap: 8px;">
+                  <div style="flex: 1;">
+                    <label style="font-size: 0.8em; display: flex; align-items: center; margin-bottom: 4px; cursor: pointer;">
+                      <input type="checkbox" id="range-remove-bias" checked style="margin-right: 5px;"> Remove Bias
+                    </label>
+                    <label style="font-size: 0.8em; display: flex; align-items: center; margin-bottom: 4px; cursor: pointer;">
+                      <input type="checkbox" id="range-filter-data" checked style="margin-right: 5px;"> Filter Data
+                    </label>
+                  </div>
+                  <div style="flex: 1;">
+                    <label style="font-size: 0.8em; display: flex; align-items: center; margin-bottom: 4px; cursor: pointer;" title="Estimated vs Actual Distance: Show Trendline">
+                      <input type="checkbox" id="range-show-trendline" checked style="margin-right: 5px;"> Trendline
+                    </label>
+                    <label style="font-size: 0.8em; display: flex; align-items: center; margin-bottom: 4px; cursor: pointer;" title="Estimated vs Actual Distance: Perfect Estimated Distance (dashed green line)">
+                      <input type="checkbox" id="range-show-perfect-dist" style="margin-right: 5px;"> Perfect Distance
+                    </label>
+                  </div>
+                </div>
+                <div class="file-input-container" style="margin-top: 6px; justify-content: space-between;">
+                  <span style="font-size: 0.8em;">Filter Dist Min (m)</span>
+                  <input type="number" id="range-dist-min" value="-1" step="0.5" style="width: 60px; padding: 4px; border: 1px solid #ccc; text-align: center; font-size: 0.8em;">
+                </div>
+                <div class="file-input-container" style="margin-top: 6px; justify-content: space-between;">
+                  <span style="font-size: 0.8em;">Filter Dist Max (m)</span>
+                  <input type="number" id="range-dist-max" value="11" step="0.5" style="width: 60px; padding: 4px; border: 1px solid #ccc; text-align: center; font-size: 0.8em;">
+                </div>
+                <!-- Double knob slider for Filter Distance (-5m to 100m) -->
+                <div class="dual-slider-container" style="margin-top: 10px; height: 30px;">
+                  <div class="slider-track"></div>
+                  <div class="slider-range" id="range-dist-slider-fill" style="left: 3.81%; width: 11.43%;"></div>
+                  <input type="range" id="range-dist-slider-min" min="-5" max="100" step="0.5" value="-1">
+                  <input type="range" id="range-dist-slider-max" min="-5" max="100" step="0.5" value="11">
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75em; color: #666; margin-top: -4px;">
+                  <span>-5m</span>
+                  <span id="range-dist-slider-val">-1m - 11m</span>
+                  <span>100m</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 2: Distribution of Range Error -->
+            <div class="param-section" style="margin-top: 12px; border-top: 1px solid #86e386; padding-top: 8px;">
+              <div class="param-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.85em; font-weight: bold; color: #1e4620;">Distribution of Range Error</span>
+                <label class="checkbox-label" style="font-size: 0.8em; display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="checkbox" class="param-section-show" id="show-params-distribution" checked> show
+                </label>
+              </div>
+              <div class="param-section-body">
+                <label style="font-size: 0.8em; display: flex; align-items: center; margin-top: 4px; cursor: pointer;">
+                  <input type="checkbox" id="range-signed-distribution" checked style="margin-right: 5px;"> Signed Distribution Error
+                </label>
+              </div>
+            </div>
+
+            <!-- Section 3: Time Window for all Charts -->
+            <div class="param-section" style="margin-top: 12px; border-top: 1px solid #86e386; padding-top: 8px;">
+              <div class="param-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.85em; font-weight: bold; color: #1e4620;">Time Window for all Charts</span>
+                <label class="checkbox-label" style="font-size: 0.8em; display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="checkbox" class="param-section-show" id="show-params-time" checked> show
+                </label>
+              </div>
+              <div class="param-section-body">
+                <div style="font-size: 0.8em; font-weight: 500; margin-bottom: 4px;">Time Filter (s):</div>
+                <div style="display: flex; justify-content: space-between; gap: 6px;">
+                  <div class="file-input-container" style="flex: 1; justify-content: space-between;">
+                    <span style="font-size: 0.8em;">Min (s)</span>
+                    <input type="number" id="range-time-min" value="0" step="0.5" min="0" style="width: 55px; padding: 4px; border: 1px solid #ccc; text-align: center; font-size: 0.8em;">
+                  </div>
+                  <div class="file-input-container" style="flex: 1; justify-content: space-between;">
+                    <span style="font-size: 0.8em;">Max (s)</span>
+                    <input type="number" id="range-time-max" value="100" step="0.5" min="0" style="width: 55px; padding: 4px; border: 1px solid #ccc; text-align: center; font-size: 0.8em;">
+                  </div>
+                </div>
+                <div class="dual-slider-container" style="margin-top: 8px; height: 30px;">
+                  <div class="slider-track"></div>
+                  <div class="slider-range" id="range-time-slider-fill" style="left: 0%; width: 100%;"></div>
+                  <input type="range" id="range-time-slider-min" min="0" max="100" step="0.1" value="0">
+                  <input type="range" id="range-time-slider-max" min="0" max="100" step="0.1" value="100">
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75em; color: #666; margin-top: -4px;">
+                  <span id="range-time-slider-min-label">0s</span>
+                  <span id="range-time-slider-val">0.0s - 100.0s</span>
+                  <span id="range-time-slider-max-label">100s</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 4: Cramer Rao Lower Bound (CRLB) -->
+            <div class="param-section" style="margin-top: 12px; border-top: 1px solid #86e386; padding-top: 8px;">
+              <div class="param-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.85em; font-weight: bold; color: #1e4620;">Cramer Rao Lower Bound (CRLB)</span>
+                <label class="checkbox-label" style="font-size: 0.8em; display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="checkbox" class="param-section-show" id="show-params-crlb"> show
+                </label>
+              </div>
+              <div class="param-section-body" style="display: none;">
+                <!-- 1. Noise Floor Slider and Value (default -90 dBm) -->
+                <div style="margin-bottom: 6px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.8em; margin-bottom: 2px;">
+                    <span>Noise Floor:</span>
+                    <span id="crlb-noise-val" style="font-weight: 500;">-90 dBm</span>
+                  </div>
+                  <input type="range" id="crlb-noise-slider" min="-110" max="-60" step="1" value="-90" style="width: 100%; margin: 2px 0;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.7em; color: #666; margin-top: -2px;">
+                    <span>-110 dBm</span>
+                    <span>-60 dBm</span>
+                  </div>
+                </div>
+
+                <!-- 2. Dual knob slider for min and max RSSI (-110 dBm to -10 dBm, defaults -90 to -30) -->
+                <div style="margin-top: 8px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.8em; margin-bottom: 2px;">
+                    <span>RSSI Range:</span>
+                    <span id="crlb-rssi-val" style="font-weight: 500;">-90 to -30 dBm</span>
+                  </div>
+                  <div class="dual-slider-container" style="margin-top: 4px; height: 30px;">
+                    <div class="slider-track"></div>
+                    <div class="slider-range" id="crlb-rssi-slider-fill" style="left: 20%; width: 60%;"></div>
+                    <input type="range" id="crlb-rssi-min" min="-110" max="-10" step="1" value="-90">
+                    <input type="range" id="crlb-rssi-max" min="-110" max="-10" step="1" value="-30">
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.7em; color: #666; margin-top: -4px;">
+                    <span>-110 dBm</span>
+                    <span>-10 dBm</span>
+                  </div>
+                </div>
+
+                <!-- 3. Dual knob slider for min and max Bandwidth (20, 40, 80, 160, 320 MHz, default 20 to 320 MHz) -->
+                <div style="margin-top: 8px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.8em; margin-bottom: 2px;">
+                    <span>Bandwidth Range:</span>
+                    <span id="crlb-bw-val" style="font-weight: 500;">20 to 320 MHz</span>
+                  </div>
+                  <div class="dual-slider-container" style="margin-top: 4px; height: 30px;">
+                    <div class="slider-track"></div>
+                    <div class="slider-range" id="crlb-bw-slider-fill" style="left: 0%; width: 100%;"></div>
+                    <input type="range" id="crlb-bw-min" min="0" max="4" step="1" value="0">
+                    <input type="range" id="crlb-bw-max" min="0" max="4" step="1" value="4">
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.7em; color: #666; margin-top: -4px;">
+                    <span>20</span>
+                    <span>40</span>
+                    <span>80</span>
+                    <span>160</span>
+                    <span>320 MHz</span>
+                  </div>
+                </div>
+
+                <!-- 4. Checkbox: SNR vs RSSI horizontal axis -->
+                <div style="margin-top: 8px;">
+                  <label style="font-size: 0.8em; display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="crlb-use-snr" checked style="margin-right: 6px;"> Use SNR for Horizontal Axis
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="subpanel subpanel-blue">
+          <div class="subpanel-title">
+            <span>Charts</span>
+            <div class="subpanel-header-controls">
+              <button class="defaults-btn" id="btn-range-charts-defaults">defaults</button>
+              <label class="checkbox-label"><input type="checkbox" class="subpanel-show-checkbox" checked> show</label>
+            </div>
+          </div>
+          <div class="subpanel-body">
+            <div style="margin-top: 6px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #c2dbff; padding-bottom: 6px;">
+              <span style="font-size: 0.8em; font-weight: 500;">Format:</span>
+              <div style="display: flex; gap: 8px; font-size: 0.8em;">
+                <label style="display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="radio" name="range-chart-grid-format" value="1"> Nx1
+                </label>
+                <label style="display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="radio" name="range-chart-grid-format" value="2" checked> Nx2
+                </label>
+                <label style="display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="radio" name="range-chart-grid-format" value="3"> Nx3
+                </label>
+              </div>
+            </div>
+            <div style="margin-bottom: 8px; border-bottom: 1px solid #c2dbff; padding-bottom: 6px;">
+              <div style="font-size: 0.8em; font-weight: 500; margin-bottom: 4px;">Aspect Ratio (x by y):</div>
+              <div style="display: flex; gap: 10px; font-size: 0.8em;">
+                <label style="display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="radio" name="range-chart-aspect-ratio" value="4x3" checked> 4x3
+                </label>
+                <label style="display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="radio" name="range-chart-aspect-ratio" value="16x9"> 16x9
+                </label>
+                <label style="display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="radio" name="range-chart-aspect-ratio" value="best-fit"> Best Fit
+                </label>
+              </div>
+            </div>
+            <div style="margin-bottom: 8px; border-bottom: 1px solid #c2dbff; padding-bottom: 6px;">
+              <div style="font-size: 0.8em; font-weight: 500; margin-bottom: 4px;">Minor grids:</div>
+              <div style="display: flex; gap: 8px; font-size: 0.8em; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="radio" name="range-chart-minor-grid" value="none"> None
+                </label>
+                <label style="display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="radio" name="range-chart-minor-grid" value="50%"> 50%
+                </label>
+                <label style="display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="radio" name="range-chart-minor-grid" value="25%" checked> 25%
+                </label>
+                <label style="display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                  <input type="radio" name="range-chart-minor-grid" value="10%"> 10%
+                </label>
+              </div>
+            </div>
+            <div style="margin-bottom: 8px; border-bottom: 1px solid #c2dbff; padding-bottom: 6px;">
+              <label style="font-size: 0.8em; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="checkbox" id="range-chart-include-filename"> (include filename)
+              </label>
+            </div>
+            <div style="margin-top: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.8em; font-weight: 500;">Select Charts:</span>
+              <div style="display: flex; gap: 4px;">
+                <button class="defaults-btn" id="btn-range-charts-select-all" title="Select all charts">Select All</button>
+                <button class="defaults-btn" id="btn-range-charts-unselect-all" title="Unselect all charts">Unselect All</button>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-size: 0.8em; display: flex; align-items: center;">
+                <input type="checkbox" id="chart-check-est-dist" checked style="margin-right: 6px;">
+                Estimated vs Actual Distance
+              </label>
+              <label style="font-size: 0.8em; display: flex; align-items: center;">
+                <input type="checkbox" id="chart-check-cdf" checked style="margin-right: 6px;">
+                CDF of Range Errors (unsigned)
+              </label>
+              <label style="font-size: 0.8em; display: flex; align-items: center;">
+                <input type="checkbox" id="chart-check-spread" checked style="margin-right: 6px;">
+                Spread vs Actual Distance
+              </label>
+              <label style="font-size: 0.8em; display: flex; align-items: center;">
+                <input type="checkbox" id="chart-check-distribution" checked style="margin-right: 6px;">
+                <span id="label-check-distribution">Distribution of Range Error (signed)</span>
+              </label>
+              <label style="font-size: 0.8em; display: flex; align-items: center;">
+                <input type="checkbox" id="chart-check-cross-spread" checked style="margin-right: 6px;">
+                Distance vs Std.Dev &amp; RSSI
+              </label>
+              <label style="font-size: 0.8em; display: flex; align-items: center;">
+                <input type="checkbox" id="chart-check-stddev-rssi" checked style="margin-right: 6px;">
+                Std.Dev vs RSSI
+              </label>
+              <label style="font-size: 0.8em; display: flex; align-items: center;">
+                <input type="checkbox" id="chart-check-est-dist-time" checked style="margin-right: 6px;">
+                Estimated Distance vs Time (s)
+              </label>
+              <label style="font-size: 0.8em; display: flex; align-items: center;">
+                <input type="checkbox" id="chart-check-crlb" checked style="margin-right: 6px;">
+                Cramer Rao Lower Bound (CRLB)
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="tab-content-ap-location" class="tab-content">
+      <div class="subpanel">
+        <div class="subpanel-title">
+          <span>Files</span>
+          <div class="subpanel-header-controls">
+            <label class="checkbox-label" style="font-size: 0.8em; display: flex; align-items: center; gap: 3px; cursor: pointer;">
+              <input type="checkbox" id="ap-file-drag"> drag
+            </label>
+            <button class="defaults-btn" id="btn-ap-file-reset" style="background-color: #7b1fa2; color: #ffffff; border-color: #6a1b9a;" title="Clear loaded chart data">reset</button>
+            <button class="defaults-btn" id="btn-ap-all-defaults" title="Reset all subpanels in AP Location to defaults">All defaults</button>
+            <label class="checkbox-label"><input type="checkbox" class="subpanel-show-checkbox" id="ap-file-show" checked> show</label>
+          </div>
+        </div>
+        <div class="subpanel-body">
+          <div class="file-input-container" id="log-file-input-container">
+            <input type="text" id="log-file-text" readonly placeholder="FIND Log CSV">
+            <button id="browse-button" class="browse-button">Browse</button>
+            <input type="file" id="log-file-input" style="display: none;">
+          </div>
+          <div id="log-file-dropzone" style="display: none; border: 2px dashed #1a73e8; border-radius: 6px; padding: 14px 10px; text-align: center; background: #f8fafd; cursor: pointer; transition: background 0.2s, border-color 0.2s;">
+            <div style="font-size: 1.3em; margin-bottom: 2px; color: #1a73e8;">📥</div>
+            <div id="log-file-dropzone-text" style="font-size: 0.85em; font-weight: 500; color: #1a73e8;">Drag &amp; Drop FIND Log CSV Here</div>
+            <div style="font-size: 0.75em; color: #5f6368; margin-top: 2px;">or click to browse</div>
+          </div>
+          <div class="file-input-container" id="gt-file-input-container" style="margin-top: 10px;">
+            <input type="text" id="gt-file-text" readonly placeholder="GT Coords CSV...">
+            <button id="gt-browse-button" class="browse-button">Browse</button>
+            <input type="file" id="gt-file-input" style="display: none;">
+          </div>
+          <div id="gt-file-dropzone" style="display: none; margin-top: 10px; border: 2px dashed #1a73e8; border-radius: 6px; padding: 14px 10px; text-align: center; background: #f8fafd; cursor: pointer; transition: background 0.2s, border-color 0.2s;">
+            <div style="font-size: 1.3em; margin-bottom: 2px; color: #1a73e8;">📥</div>
+            <div id="gt-file-dropzone-text" style="font-size: 0.85em; font-weight: 500; color: #1a73e8;">Drag &amp; Drop GT Coords CSV Here</div>
+            <div style="font-size: 0.75em; color: #5f6368; margin-top: 2px;">or click to browse</div>
+          </div>
+          <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <button id="reload-button" class="browse-button" style="flex: 1;">Reload Previous Files</button>
+            <button id="ap-toggle-show-button" class="browse-button" style="flex: 1; background-color: #1a73e8;">Toggle Show[]</button>
+          </div>
+        </div>
+      </div>
+      <div class="subpanel subpanel-orange collapsed">
+        <div class="subpanel-title">
+          <span>Data</span>
+          <div class="subpanel-header-controls">
+            <button class="defaults-btn" id="btn-ap-data-defaults">defaults</button>
+            <label class="checkbox-label"><input type="checkbox" class="subpanel-show-checkbox" id="ap-data-show"> show</label>
+          </div>
+        </div>
+        <div class="subpanel-body" style="display: none;">
+          <div style="margin-bottom: 5px;">
+            <label class="checkbox-label" style="font-size: 0.8em; display: flex; align-items: center; gap: 3px;">
+              <input type="checkbox" id="show-data-checkbox"> show
+            </label>
+          </div>
+          <textarea id="data-textbox" rows="10" readonly></textarea>
+        </div>
+      </div>
+      <div class="subpanel subpanel-yellow">
+        <div class="subpanel-title">
+          <span>Playback</span>
+          <div class="subpanel-header-controls">
+            <button id="btn-screenshot" class="play-btn blue" style="padding: 2px 6px; font-size: 0.75em;">Screenshot</button>
+            <label class="checkbox-label" style="color: red; margin: 0; display: flex; align-items: center; font-size: 0.8em; cursor: pointer; white-space: nowrap;">
+              <input type="checkbox" id="record-checkbox" style="margin-right: 4px;"> Record
+            </label>
+            <button class="defaults-btn" id="btn-playback-defaults">defaults</button>
+            <label class="checkbox-label"><input type="checkbox" class="subpanel-show-checkbox" checked> show</label>
+          </div>
+        </div>
+        <div class="subpanel-body">
+          <div class="dual-slider-container">
+            <div class="slider-track"></div>
+            <div class="slider-range" id="slider-range-fill" style="left: 0%; width: 100%;"></div>
+            <input type="range" id="slider-min" min="0" max="100" value="0" disabled>
+            <input type="range" id="slider-max" min="0" max="100" value="100" disabled>
+          </div>
+          <span id="slider-val">Step: 0 - 100</span>
+          <div style="margin-top: 10px; display: flex; gap: 5px; align-items: center;">
+            <button id="btn-animate" class="play-btn green" style="flex: 1;" disabled>Animate</button>
+            <button id="btn-reset" class="play-btn blue" disabled>Reset</button>
+            <input type="number" id="anim-delay" value="250" min="10" step="10" style="width: 60px; padding: 4px; border: 1px solid #ccc; font-size: 0.8em;" title="Delay (ms)">
+            <span style="font-size: 0.75em; color: #555;">ms</span>
+          </div>
+          <div style="margin-top: 5px; display: flex; gap: 5px;">
+            <button id="btn-decrement" class="play-btn grey" style="flex: 1;" disabled>Decrement</button>
+            <button id="btn-cancel" class="play-btn red" style="flex: 1;" disabled>Cancel</button>
+            <button id="btn-increment" class="play-btn grey" style="flex: 1;" disabled>Increment</button>
+          </div>
+        </div>
+      </div>
+      <div class="subpanel subpanel-green">
+        <div class="subpanel-title">
+          <span>Enhanced Input</span>
+          <div class="subpanel-header-controls">
+            <button class="defaults-btn" id="btn-enhanced-input-reset">defaults</button>
+            <label class="checkbox-label"><input type="checkbox" class="subpanel-show-checkbox" checked> show</label>
+          </div>
+        </div>
+        <div class="subpanel-body">
+          <div class="file-input-container">
+            <span style="font-size: 0.8em; margin-right: 10px;">Initial Step Length (m)</span>
+            <input type="number" id="enhanced-step-length" value="0.67" step="0.01" min="0.1" max="2.0" style="width: 80px; padding: 4px; border: 1px solid #ccc;">
+          </div>
+          <div class="file-input-container" style="margin-top: 8px;">
+            <span style="font-size: 0.8em; margin-right: 10px;">Diversity (m)</span>
+            <input type="number" id="enhanced-diversity" value="0.8" step="0.1" min="0.0" max="10.0" style="width: 80px; padding: 4px; border: 1px solid #ccc;">
+          </div>
+          <fieldset style="margin-top: 12px; border: 1px solid black; border-radius: 4px; padding: 8px;">
+            <legend style="font-size: 0.85em; font-weight: bold; color: black; padding: 0 5px;">Filter Inputs</legend>
+            <div class="file-input-container">
+              <span style="font-size: 0.8em; margin-right: 10px;">RSSI filter (dBm)</span>
+              <input type="number" id="enhanced-rssi" value="-95" style="width: 80px; padding: 4px; border: 1px solid #ccc;">
+            </div>
+            <div class="file-input-container" style="margin-top: 8px;">
+              <span style="font-size: 0.8em; margin-right: 10px;">Successes in Burst</span>
+              <input type="number" id="enhanced-success" value="5" min="1" max="8" style="width: 80px; padding: 4px; border: 1px solid #ccc;">
+            </div>
+            <div class="file-input-container" style="margin-top: 8px;">
+              <span style="font-size: 0.8em; margin-right: 10px;">Std. Dev. (m)</span>
+              <input type="number" id="enhanced-stddev" value="2.0" step="0.1" min="0.1" max="10.0" style="width: 80px; padding: 4px; border: 1px solid #ccc;">
+            </div>
+            <div class="file-input-container" style="margin-top: 8px;">
+              <label style="font-size: 0.8em; display: flex; align-items: center;">
+                <input type="checkbox" id="limit-gt-checkbox" checked style="margin-right: 5px;"> Limit steps to GT-1
+              </label>
+            </div>
+            <div class="file-input-container" style="margin-top: 8px; flex-direction: column; align-items: stretch; gap: 4px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.8em;">
+                <span>Only use max Last N Steps</span>
+                <span id="window-steps-val">All</span>
+              </div>
+              <input type="range" id="window-steps-slider" min="1" max="100" value="100" style="width: 100%; margin: 0;">
+            </div>
+          </fieldset>
+          <fieldset style="margin-top: 12px; border: 1px solid black; border-radius: 4px; padding: 8px;">
+            <legend style="font-size: 0.85em; font-weight: bold; color: black; padding: 0 5px;">Range Bias Removal</legend>
+            <div style="display: flex; gap: 15px; font-size: 0.8em; margin-bottom: 8px;">
+              <label><input type="radio" name="range-bias-mode" value="none" checked> None</label>
+              <label><input type="radio" name="range-bias-mode" value="auto"> Auto</label>
+              <label><input type="radio" name="range-bias-mode" value="manual"> Manual</label>
+            </div>
+            <div class="file-input-container" style="justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 0.8em; margin-right: 10px;">Manual Bias (m)</span>
+              <input type="number" id="manual-bias" value="0.5" step="0.1" style="width: 60px; padding: 4px; border: 1px solid #ccc; text-align: center;">
+            </div>
+            <div class="file-input-container" style="justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 0.8em; margin-right: 10px;">Scale Range</span>
+              <input type="number" id="scale-range" value="0.93" step="0.01" min="0.1" max="2.0" style="width: 60px; padding: 4px; border: 1px solid #ccc; text-align: center;">
+            </div>
+            <div class="file-input-container" style="justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.8em; margin-right: 10px;">Bias (m)</span>
+              <input type="text" id="auto-range-bias-val" value="---" readonly style="width: 60px; padding: 4px; border: 1px solid #ccc; text-align: center; background-color: #eee;">
+            </div>
+          </fieldset>
+        </div>
+      </div>
+      <div class="subpanel subpanel-blue">
+        <div class="subpanel-title">
+          <span>NG Solver</span>
+          <div class="subpanel-header-controls">
+            <button class="defaults-btn" id="btn-ng-solver-reset">defaults</button>
+            <label class="checkbox-label"><input type="checkbox" class="subpanel-show-checkbox" checked> show</label>
+          </div>
+        </div>
+        <div class="subpanel-body">
+          <fieldset style="border: 1px solid black; border-radius: 4px; padding: 8px; margin-top: 8px;">
+            <legend style="font-size: 0.85em; font-weight: bold; color: black; padding: 0 5px;">Initialization</legend>
+            <label style="display: block; font-size: 0.8em; margin-bottom: 4px;"><input type="radio" name="ng-init" value="first" checked> First PDR Position</label>
+            <label style="display: block; font-size: 0.8em; margin-bottom: 4px;"><input type="radio" name="ng-init" value="centroid"> Centroid of Steps</label>
+            <label style="display: block; font-size: 0.8em; margin-bottom: 4px;"><input type="radio" name="ng-init" value="lls"> Linear Least Squares</label>
+            <label style="display: block; font-size: 0.8em;"><input type="radio" name="ng-init" value="last"> Last PDR Position</label>
+          </fieldset>
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <fieldset style="flex: 1; border: 1px solid black; border-radius: 4px; padding: 8px; margin-top: 0;">
+              <legend style="font-size: 0.85em; font-weight: bold; color: black; padding: 0 5px;">Weight by RSSI</legend>
+              <label style="display: block; font-size: 0.8em; margin-bottom: 4px;"><input type="radio" name="rssi-weight" value="none" checked> None</label>
+              <label style="display: block; font-size: 0.8em; margin-bottom: 4px;"><input type="radio" name="rssi-weight" value="inverse"> 1 / abs(RSSI)</label>
+              <label style="display: block; font-size: 0.8em;"><input type="radio" name="rssi-weight" value="linear"> Linearized RSSI</label>
+            </fieldset>
+            <fieldset style="flex: 1; border: 1px solid black; border-radius: 4px; padding: 8px; margin-top: 0;">
+              <legend style="font-size: 0.85em; font-weight: bold; color: black; padding: 0 5px;">Weight by Range</legend>
+              <label style="display: block; font-size: 0.8em; margin-bottom: 4px;"><input type="radio" name="range-weight" value="none" checked> None</label>
+              <label style="display: block; font-size: 0.8em; margin-bottom: 4px;"><input type="radio" name="range-weight" value="inv-r"> 1 / r</label>
+              <label style="display: block; font-size: 0.8em;"><input type="radio" name="range-weight" value="inv-r2"> 1 / r²</label>
+            </fieldset>
+          </div>
+          <fieldset style="margin-top: 12px; border: 1px solid black; border-radius: 4px; padding: 8px;">
+            <legend style="font-size: 0.85em; font-weight: bold; color: black; padding: 0 5px;">Additional Weights</legend>
+            <label style="display: block; font-size: 0.8em; margin-bottom: 4px;">
+              <input type="checkbox" id="weight-success"> Weight by Successes
+            </label>
+            <label style="display: block; font-size: 0.8em;">
+              <input type="checkbox" id="weight-sd"> Weight by 1 / sd²
+            </label>
+          </fieldset>
+          <div class="file-input-container" style="margin-top: 12px; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8em; margin-right: 10px;">Enhanced NG Position RMS Error (m)</span>
+            <input type="text" id="enhanced-rms-pos-val" value="---" readonly style="width: 60px; padding: 4px; border: 1px solid #ccc; text-align: center; background-color: #eee;">
+          </div>
+        </div>
+      </div>
+      <div class="subpanel subpanel-cyan">
+        <div class="subpanel-title">
+          <span>Spatial Optimization</span>
+          <div class="subpanel-header-controls">
+            <button class="defaults-btn" id="btn-spatial-opt-reset">defaults</button>
+            <label class="checkbox-label"><input type="checkbox" class="subpanel-show-checkbox" checked> show</label>
+          </div>
+        </div>
+        <div class="subpanel-body">
+          <div style="margin-top: 8px;">
+            <label style="display: block; font-size: 0.8em; margin-bottom: 4px;"><input type="radio" name="ransac-mode" value="none" checked> None</label>
+            <label style="display: block; font-size: 0.8em; margin-bottom: 4px;"><input type="radio" name="ransac-mode" value="step-only"> Auto step length by Gradient Descent (GD) ONLY</label>
+            <label style="display: block; font-size: 0.8em; margin-bottom: 4px;"><input type="radio" name="ransac-mode" value="ransac-only"> Bucket Consensus (BC) RANSAC ONLY</label>
+            <label style="display: block; font-size: 0.8em; margin-bottom: 4px;"><input type="radio" name="ransac-mode" value="ransac-step"> BC RANSAC with auto step length GD</label>
+          </div>
+          <div class="file-input-container" style="margin-top: 8px; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8em; margin-right: 10px; flex-grow: 1;">Estimated Step Length (m)</span>
+            <input type="text" id="auto-step-val" readonly style="width: 80px; padding: 4px; border: 1px solid #ccc; font-size: 0.8em; text-align: center; background-color: #eee;" placeholder="---">
+          </div>
+        </div>
+      </div>
+      <div class="subpanel subpanel-magenta">
+        <div class="subpanel-title">
+          <span>Parameter Optimization</span>
+          <div class="subpanel-header-controls">
+            <button class="defaults-btn" id="btn-optimize-reset">defaults</button>
+            <label class="checkbox-label"><input type="checkbox" class="subpanel-show-checkbox" checked> show</label>
+          </div>
+        </div>
+        <div class="subpanel-body">
+          <div style="margin-top: 8px;">
+            <label style="display: block; font-size: 0.8em; margin-bottom: 4px;">
+              <input type="checkbox" id="optimize-angle"> Minimise Mean Enhanced Angle Error
+            </label>
+            <label style="display: block; font-size: 0.8em; margin-bottom: 4px;">
+              <input type="checkbox" id="optimize-dist"> Minimise Mean Enhanced Distance Error
+            </label>
+            <label style="display: block; font-size: 0.8em; margin-bottom: 8px;">
+              <input type="checkbox" id="optimize-rms-pos"> Minimise Enhanced NG Position RMS Error
+            </label>
+          </div>
+          <div class="file-input-container" style="margin-top: 8px; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8em; margin-right: 10px; flex-grow: 1;">Progress</span>
+            <input type="text" id="optimize-progress" readonly style="width: 100px; padding: 4px; border: 1px solid #ccc; font-size: 0.8em; text-align: center; background-color: #eee;" value="0 / 1728">
+          </div>
+          <div style="margin-top: 10px;">
+            <button id="btn-optimize-start" style="width: 100%; padding: 6px; font-size: 0.85em; background-color: #e3f2fd; border: 1px solid #bbdefb; color: #1565c0; border-radius: 4px; cursor: pointer; font-weight: bold;">Start</button>
+          </div>
+        </div>
+      </div>
+      <div class="subpanel subpanel-purple">
+        <div class="subpanel-title">
+          <span>Metrics</span>
+          <div class="subpanel-header-controls">
+            <button class="defaults-btn" id="btn-metrics-defaults">defaults</button>
+            <label class="checkbox-label"><input type="checkbox" class="subpanel-show-checkbox" checked> show</label>
+          </div>
+        </div>
+        <div class="subpanel-body">
+          <div style="margin-top: 10px;">
+            <button id="btn-generate-cdfs" class="browse-button" style="width: 100%;">Generate CDFs</button>
+            <button id="btn-generate-steps" class="browse-button" style="width: 100%; margin-top: 10px;">Step Charts</button>
+          </div>
+        </div>
+      </div>
+      </div>
+      <!-- Control widgets will go here -->
+    </div>
+    <div id="divider" class="divider">
+      <button id="collapse-btn">&laquo;</button>
+    </div>
+    <div class="panel right-panel" style="position: relative;">
+      <!-- AP Location Container -->
+      <div id="ap-location-container" style="display: none; width: 100%; height: 100%; position: relative;">
+        <div class="zoom-controls" style="position: absolute; top: 10px; left: 10px; z-index: 10; display: flex; flex-direction: column; gap: 5px;">
+          <button id="btn-zoom-in" class="play-btn blue" style="width: 30px; height: 30px; font-weight: bold; font-size: 1.2em; padding: 0; display: flex; align-items: center; justify-content: center;">+</button>
+          <button id="btn-zoom-out" class="play-btn blue" style="width: 30px; height: 30px; font-weight: bold; font-size: 1.2em; padding: 0; display: flex; align-items: center; justify-content: center;">-</button>
+          <button id="btn-zoom-reset" class="play-btn grey" style="width: 45px; height: 25px; font-weight: normal; font-size: 0.75em; padding: 0; margin-top: 5px; display: flex; align-items: center; justify-content: center;">Reset</button>
+        </div>
+        <canvas id="plot-canvas"></canvas>
+      </div>
+
+      <!-- Range Analysis Container (default active) -->
+      <div id="range-analysis-container" style="width: 100%; height: 100%; overflow-y: auto; box-sizing: border-box; padding: 15px; background: #f8f9fa;"></div>
+    </div>
+  </div>
+
+  <!-- CDF Modal Overlay -->
+  <div id="cdf-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>CDFs (Measured - True)</h2>
+        <span id="cdf-modal-close" class="modal-close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="chart-section">
+          <div class="chart-header">
+            <h3>Angle Error CDF</h3>
+            <div class="chart-buttons">
+              <button id="btn-save-angle-csv" class="browse-button">Save CSV</button>
+              <button id="btn-save-angle-png" class="browse-button">Save Plot PNG</button>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="canvas-cdf-angle"></canvas>
+          </div>
+          <div class="dual-slider-container metrics-slider-container" style="max-width: 500px; margin: 15px auto 5px auto;">
+            <div class="slider-track"></div>
+            <div class="slider-range metrics-slider-range-fill" style="left: 0%; width: 100%;"></div>
+            <input type="range" class="metrics-slider-min" min="0" max="100" value="0">
+            <input type="range" class="metrics-slider-max" min="0" max="100" value="100">
+          </div>
+          <span class="metrics-slider-val" style="display: block; text-align: center; font-size: 0.85em; font-weight: bold; margin-bottom: 20px;">Step: 0 - 100</span>
+        </div>
+        <div class="chart-section" style="margin-top: 30px;">
+          <div class="chart-header">
+            <h3>Distance Error CDF</h3>
+            <div class="chart-buttons">
+              <button id="btn-save-dist-csv" class="browse-button">Save CSV</button>
+              <button id="btn-save-dist-png" class="browse-button">Save Plot PNG</button>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="canvas-cdf-dist"></canvas>
+          </div>
+          <div class="dual-slider-container metrics-slider-container" style="max-width: 500px; margin: 15px auto 5px auto;">
+            <div class="slider-track"></div>
+            <div class="slider-range metrics-slider-range-fill" style="left: 0%; width: 100%;"></div>
+            <input type="range" class="metrics-slider-min" min="0" max="100" value="0">
+            <input type="range" class="metrics-slider-max" min="0" max="100" value="100">
+          </div>
+          <span class="metrics-slider-val" style="display: block; text-align: center; font-size: 0.85em; font-weight: bold; margin-bottom: 10px;">Step: 0 - 100</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step Charts Modal Overlay -->
+  <div id="step-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Error vs Step Number</h2>
+        <span id="step-modal-close" class="modal-close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="chart-section">
+          <div class="chart-header">
+            <h3>Angle Error vs Step Number</h3>
+            <div class="chart-buttons">
+              <button id="btn-save-step-angle-csv" class="browse-button">Save CSV</button>
+              <button id="btn-save-step-angle-png" class="browse-button">Save Plot PNG</button>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="canvas-step-angle"></canvas>
+          </div>
+          <div class="dual-slider-container metrics-slider-container" style="max-width: 500px; margin: 15px auto 5px auto;">
+            <div class="slider-track"></div>
+            <div class="slider-range metrics-slider-range-fill" style="left: 0%; width: 100%;"></div>
+            <input type="range" class="metrics-slider-min" min="0" max="100" value="0">
+            <input type="range" class="metrics-slider-max" min="0" max="100" value="100">
+          </div>
+          <span class="metrics-slider-val" style="display: block; text-align: center; font-size: 0.85em; font-weight: bold; margin-bottom: 20px;">Step: 0 - 100</span>
+        </div>
+        <div class="chart-section" style="margin-top: 30px;">
+          <div class="chart-header">
+            <h3>Distance Error vs Step Number</h3>
+            <div class="chart-buttons">
+              <button id="btn-save-step-dist-csv" class="browse-button">Save CSV</button>
+              <button id="btn-save-step-dist-png" class="browse-button">Save Plot PNG</button>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="canvas-step-dist"></canvas>
+          </div>
+          <div class="dual-slider-container metrics-slider-container" style="max-width: 500px; margin: 15px auto 5px auto;">
+            <div class="slider-track"></div>
+            <div class="slider-range metrics-slider-range-fill" style="left: 0%; width: 100%;"></div>
+            <input type="range" class="metrics-slider-min" min="0" max="100" value="0">
+            <input type="range" class="metrics-slider-max" min="0" max="100" value="100">
+          </div>
+          <span class="metrics-slider-val" style="display: block; text-align: center; font-size: 0.85em; font-weight: bold; margin-bottom: 10px;">Step: 0 - 100</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Estimated Range Distribution Spread at Specific Actual Distance -->
+  <div id="range-spread-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.55); z-index: 10000; justify-content: center; align-items: center;">
+    <div style="background: white; border-radius: 8px; box-shadow: 0 4px 24px rgba(0,0,0,0.3); width: 920px; max-width: 96vw; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="padding: 12px 16px; background: #f1f3f4; border-bottom: 1px solid #dadce0; display: flex; justify-content: space-between; align-items: center;">
+        <span id="range-spread-modal-title" style="font-weight: bold; font-size: 0.95em; color: #202124;">Estimated Range Distribution Spread</span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button id="range-spread-modal-save-png" class="browse-button" style="padding: 3px 10px; font-size: 0.8em;">Save PNG</button>
+          <button id="range-spread-modal-close" style="background: transparent; border: none; font-size: 1.4em; cursor: pointer; color: #5f6368; line-height: 1; padding: 0 4px;" title="Close">&times;</button>
+        </div>
+      </div>
+      <div style="padding: 14px; background: #ffffff; display: flex; justify-content: center;">
+        <canvas id="range-spread-modal-canvas" width="880" height="380" style="width: 880px; height: 380px; max-width: 100%; border: 1px solid #dadce0; border-radius: 4px;"></canvas>
+      </div>
+      <div style="padding: 10px 16px; background: #f8f9fa; border-top: 1px solid #dadce0; display: flex; justify-content: flex-end; gap: 8px;">
+        <button id="range-spread-modal-close-btn" class="browse-button" style="background-color: #5f6368; padding: 5px 16px; font-size: 0.85em;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var scripts = [
+        "js/parseData.js",
+        "js/ngLocationSolver.js",
+        "js/plot.js",
+        "js/rtt-ranging-tool.js",
+        "js/metrics.js",
+        "js/paramOptimizer.js",
+        "js/rangeAnalysis.js"
+      ];
+      var cacheBuster = "?cb=" + new Date().getTime();
+      scripts.forEach(function(url) {
+        document.write('<script src="' + url + cacheBuster + '"><\/script>');
+      });
+    })();
+  </script>
+</body>
+</html>
