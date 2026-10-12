@@ -5,11 +5,12 @@ visualization, and parameter optimization tool for Wi-Fi RTT (Round-Trip Time,
 also known as Wi-Fi FTM / Fine Timing Measurement, IEEE 802.11mc & 802.11az)
 ranging, distance estimation, and indoor Access Point (AP) localization.
 
-To try out the RTT Map Tool click the link:
-<https://google.github.io/rtt-ranging-tool/rtt-ranging-tool.html>
-and view the operator instructions at [USER_GUIDE.md](USER_GUIDE.md).
+Try out the [RTT Ranging Tool][rtt-tool-url] and view the operator instructions
+in the [User Guide](USER_GUIDE.md).
 
-> **Note:** This is not an officially supported Google product.
+[rtt-tool-url]: https://google.github.io/rtt-ranging-tool/rtt-ranging-tool.html
+
+> [!NOTE] This is not an officially supported Google product.
 
 ## Overview
 

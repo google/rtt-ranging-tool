@@ -196,8 +196,8 @@ $10^{(\text{RSSI} - P_{\text{noise}})/10}$) prior to computing the bound.
     `Best Fit`. Default: `4x3`.
 -   **`Minor grids` Radio**: Grid division density: `None`, `50%`, `25%`, or
     `10%`. Default: `25%`.
--   **`(include filename)` Checkbox**: Displays the filename loaded for
-    analysis in a small black font at the bottom left of each rendered chart box.
+-   **`(include filename)` Checkbox**: Displays the filename loaded for analysis
+    in a small black font at the bottom left of each rendered chart box.
     Default: `false`.
 -   **`Select All` / `Unselect All`**: Convenience buttons above the chart list
     to check or uncheck all 8 analytical charts at once.
@@ -453,10 +453,11 @@ A grey-background control box positioned in the upper right of the canvas:
     `AP Target`, `Ground Truth`, `True Target`, `Enhanced Path`,
     `Enhanced Range`, `Enhanced Target`, `Enhanced Found Step`,
     `Enhanced Found Pos`, `Enhanced Arrows`).
--   **`include filenames`**: Checkbox (default unchecked) that renders the loaded
-    FIND log and ground truth filenames (`Find: <find-filename>, GT: <gt-filename>`)
-    in a small black font at the bottom left of the right-hand map canvas. When
-    enabled, the text is automatically included in canvas screenshot exports.
+-   **`include filenames`**: Checkbox (default unchecked) that renders the
+    loaded FIND log and ground truth filenames (`Find: <find-filename>, GT:
+    <gt-filename>`) in a small black font at the bottom left of the right-hand
+    map canvas. When enabled, the text is automatically included in canvas
+    screenshot exports.
 -   **`AP Direction` Button**: Toggle button at the bottom of the legend that
     shows or hides the green AP Direction panel below the legend.
 -   **`Toggle []` Button**: Button adjacent to `AP Direction` that toggles all
@@ -520,11 +521,10 @@ a 6 GHz Wi-Fi Access Point across distances ranging from 1 to 20 meters.
     Notice that the trendline shifts to pass directly through the origin
     ($0, 0$), and the median error on the *CDF of Range Errors* chart drops
     significantly.
-7.  **Inspect Multipath Spread**:
-    On the *Estimated vs. Actual Distance* chart, click on a measurement data
-    point at a specific benchmark (e.g., $15\text{ m}$). The **"Estimated
-    Range Distribution Spread"** modal opens, displaying the spread and
-    revealing any secondary multipath reflections.
+7.  **Inspect Multipath Spread**: On the *Estimated vs. Actual Distance* chart,
+    click a measurement data point at a specific benchmark (e.g., $15\text{
+    m}$). The **"Estimated Range Distribution Spread"** modal opens, displaying
+    the spread and revealing any secondary multipath reflections.
 8.  **Export Results**:
     Click **`Save PNG`** on the CDF chart card to save a publication-quality
     vector graphic, and click **`Save CSV`** to export the sorted percentile
@@ -585,6 +585,8 @@ Gauss-Newton multilateration.
 
 ## 6. Summary & Best Practices
 
+<!-- disableFinding(LINE_OVER_80) -->
+
 | Task | Recommended Tab | Key Subpanels & Settings |
 | :--- | :--- | :--- |
 | **Antenna Delay & Bias Calibration** | Range Analysis | Parameters & Filters (`Remove Bias`), Chart (*Est. vs. Actual*) |
@@ -593,6 +595,8 @@ Gauss-Newton multilateration.
 | **Indoor AP Localization** | AP Location | File, Filters, Gauss-Newton (`1 / Std-Dev^2` weight), Spatial Optimization |
 | **PDR Drift & Step Calibration** | AP Location | Enhanced Input, Spatial Optimization (`Spatial RANSAC + Auto Step length`) |
 | **Ground Truth Benchmark Validation** | AP Location | File (`gt_coords.csv`), AP Direction Panel, Metrics (`Generate CDFs`) |
+
+<!-- enableFinding(LINE_OVER_80) -->
 
 ### Troubleshooting Tips
 
