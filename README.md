@@ -59,8 +59,8 @@ optional ground truth coordinate files (`gt_coords.csv`).
     customizable analytical charts:
     1.  *Estimated vs. Actual Distance* (with linear fit trendline, perfect
         distance reference line, and bias removal)
-    2.  *CDF of Range Errors* (unsigned percentiles at 50%, 68%, 90%, 95%,
-        99%, and maximum error)
+    2.  *CDF of Range Errors* (signed or unsigned percentiles at 50%, 68%,
+        90%, 95%, 99%, and maximum error)
     3.  *Spread vs. Actual Distance* (comparing estimate spread against standard
         deviation)
     4.  *Distribution of Range Error* (signed or unsigned histogram binning

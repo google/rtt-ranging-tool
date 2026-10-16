@@ -156,9 +156,11 @@ compensation, time bounds, and theoretical models for all range charts.
 
 -   **`show` Checkbox**: Expands or collapses this section.
 -   **`Signed Distribution Error` Checkbox**: When checked (default: `true`),
-    evaluates signed residuals ($d_{\text{est}} - d_{\text{act}}$) to reveal
-    directional over- or under-ranging. When unchecked, evaluates absolute
-    unsigned errors ($|d_{\text{est}} - d_{\text{act}}|$).
+    evaluates signed residuals ($d_{\text{est}} - d_{\text{act}}$) relative to
+    ground truth to reveal directional over- or under-ranging for both the
+    *CDF of Range Errors* and *Distribution of Range Error* charts. When
+    unchecked, evaluates absolute unsigned errors
+    ($|d_{\text{est}} - d_{\text{act}}|$).
 
 #### Section 3: Time Window for all Charts
 
@@ -206,10 +208,11 @@ $10^{(\text{RSSI} - P_{\text{noise}})/10}$) prior to computing the bound.
         distance against surveyor ground truth distance. Includes an ideal 1:1
         reference line and a linear regression fit ($y = mx + c$). Clicking
         any data point opens the detailed Distribution Spread modal.
-    2.  *CDF of Range Errors*: Cumulative distribution function of unsigned
-        range errors $|d_{\text{est}} - d_{\text{act}}|$, displaying key
-        percentiles (50th / median, 68th / $1\sigma$, 90th, 95th, 99th, and
-        maximum error).
+    2.  *CDF of Range Errors*: Cumulative distribution function of range
+        errors, configurable as signed ($d_{\text{est}} - d_{\text{act}}$)
+        or unsigned ($|d_{\text{est}} - d_{\text{act}}|$) via the
+        *Signed Distribution Error* checkbox, displaying key percentiles
+        (50th / median, 68th / $1\sigma$, 90th, 95th, 99th, and maximum error).
     3.  *Spread vs. Actual Distance*: Plots the spread (max minus min range
         estimate) and the reported standard deviation at each discrete actual
         distance.

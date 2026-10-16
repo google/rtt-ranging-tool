@@ -21,7 +21,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RTT Ranging Tool</title>
   <script>
-    const APP_VERSION = "261008-0";
+    const APP_VERSION = "261016-0";
     (function(){
       var cb = "?cb=" + new Date().getTime();
       document.write('<link rel="stylesheet" href="rtt-ranging-tool.css' + cb + '">');
@@ -360,7 +360,7 @@
               </label>
               <label style="font-size: 0.8em; display: flex; align-items: center;">
                 <input type="checkbox" id="chart-check-cdf" checked style="margin-right: 6px;">
-                CDF of Range Errors (unsigned)
+                <span id="label-check-cdf">CDF of Range Errors (signed)</span>
               </label>
               <label style="font-size: 0.8em; display: flex; align-items: center;">
                 <input type="checkbox" id="chart-check-spread" checked style="margin-right: 6px;">

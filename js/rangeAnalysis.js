@@ -921,7 +921,13 @@ function drawCdfChart(canvas, data, options) {
     return;
   }
 
-  const errors = filteredRows.map(r => Math.abs((r.estDist - normalize) - r.trueDist)).sort((a, b) => a - b);
+  const isSigned = options.signedDistribution !== false;
+  const signedStr = isSigned ? 'signed' : 'unsigned';
+
+  const errors = filteredRows.map(r => {
+    const err = (r.estDist - normalize) - r.trueDist;
+    return isSigned ? err : Math.abs(err);
+  }).sort((a, b) => a - b);
   const n = errors.length;
 
   const meanErr = errors.reduce((acc, v) => acc + v, 0) / n;
@@ -930,18 +936,27 @@ function drawCdfChart(canvas, data, options) {
   const cdf90 = calculatePercentile(errors, 90);
   const cdf95 = calculatePercentile(errors, 95);
   const cdf99 = calculatePercentile(errors, 99);
+  const minErr = errors[0];
   const maxErr = errors[errors.length - 1];
 
   const margin = { top: 40, right: 30, bottom: 50, left: 60 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
-  const minX = 0;
-  const maxX = Math.max(1, errors[errors.length - 1] * 1.05);
+  let minX, maxX;
+  if (isSigned) {
+    const span = (maxErr - minErr) || 1;
+    const padding = span * 0.05;
+    minX = (minErr >= 0 && minErr > span * 2) ? (minErr - padding) : Math.min(0, minErr - padding);
+    maxX = (maxErr <= 0 && Math.abs(maxErr) > span * 2) ? (maxErr + padding) : Math.max(0, maxErr + padding);
+  } else {
+    minX = 0;
+    maxX = Math.max(1, maxErr * 1.05);
+  }
   const minY = 0;
   const maxY = 100;
 
-  const getX = x => margin.left + ((x - minX) / (maxX - minX)) * plotW;
+  const getX = x => margin.left + ((x - minX) / (maxX - minX || 1)) * plotW;
   const getY = y => margin.top + plotH - ((y - minY) / (maxY - minY)) * plotH;
 
   drawAxesAndGrid(ctx, margin, plotW, plotH, minX, maxX, minY, maxY, 'Range Error (m)', 'CDF (%)', 10, options.minorGrid);
@@ -951,7 +966,7 @@ function drawCdfChart(canvas, data, options) {
   ctx.font = 'bold 13px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText(
-    `CDF of Range Errors (unsigned): [${options.device}]: CH:${data.channel}, BW:${options.bandwidth}`,
+    `CDF of Range Errors (${signedStr}): [${options.device}]: CH:${data.channel}, BW:${options.bandwidth}`,
     width / 2, 22
   );
 
@@ -2184,10 +2199,14 @@ function renderAllSelectedRangeCharts() {
   if (labelDist) {
     labelDist.textContent = `Distribution of Range Error (${signedStr})`;
   }
+  const labelCdf = document.getElementById('label-check-cdf');
+  if (labelCdf) {
+    labelCdf.textContent = `CDF of Range Errors (${signedStr})`;
+  }
 
   const chartConfigs = [
     { id: 'chart-check-est-dist', title: 'Estimated vs Actual Distance', render: (c, opt) => drawEstVsActualChart(c, chartPayload, opt || options) },
-    { id: 'chart-check-cdf', title: 'CDF of Range Errors (unsigned)', render: (c, opt) => drawCdfChart(c, chartPayload, opt || options) },
+    { id: 'chart-check-cdf', title: `CDF of Range Errors (${signedStr})`, render: (c, opt) => drawCdfChart(c, chartPayload, opt || options) },
     { id: 'chart-check-spread', title: 'Spread vs Actual Distance', render: (c, opt) => drawSpreadChart(c, chartPayload, opt || options) },
     { id: 'chart-check-distribution', title: `Distribution of Range Error (${signedStr})`, render: (c, opt) => drawDistributionChart(c, chartPayload, opt || options) },
     { id: 'chart-check-cross-spread', title: 'Distance vs Std.Dev & RSSI', render: (c, opt) => drawCrossSpreadChart(c, chartPayload, opt || options) },
@@ -2221,10 +2240,14 @@ function generateChartCsv(chartId, chartPayload, options) {
       break;
     }
     case 'chart-check-cdf': {
-      filename = 'cdf_range_errors.csv';
+      const isSigned = options.signedDistribution !== false;
+      filename = isSigned ? 'cdf_range_errors_signed.csv' : 'cdf_range_errors_unsigned.csv';
       csvContent = 'Percentile (%),Range Error (m)\n';
       if (filteredRows && filteredRows.length > 0) {
-        const errors = filteredRows.map(r => Math.abs((r.estDist - normalize) - r.trueDist)).sort((a, b) => a - b);
+        const errors = filteredRows.map(r => {
+          const err = (r.estDist - normalize) - r.trueDist;
+          return isSigned ? err : Math.abs(err);
+        }).sort((a, b) => a - b);
         const n = errors.length;
         errors.forEach((err, i) => {
           const pct = ((i + 1) / n * 100).toFixed(2);
